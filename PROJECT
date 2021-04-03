@@ -1,0 +1,16 @@
+domain: dong.com
+layout:
+- go.kubebuilder.io/v3
+projectName: alex-opr
+repo: alex-opr
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: dong.com
+  group: mock
+  kind: MacBook
+  path: alex-opr/api/v1beta1
+  version: v1beta1
+version: "3"
