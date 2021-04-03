@@ -28,14 +28,17 @@ type MacBookSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of MacBook. Edit macbook_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// DisPlay is an example field of MacBook. Edit macbook_types.go to remove/update
+	// todo code 添加spec的字段
+	DisPlay string `json:"display,omitempty"`
 }
 
 // MacBookStatus defines the observed state of MacBook
 type MacBookStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	// todo code 添加status的字段
+	Mod string `json:"mod,omitempty"`
 }
 
 //+kubebuilder:object:root=true

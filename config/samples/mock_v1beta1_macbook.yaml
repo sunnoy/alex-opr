@@ -4,4 +4,4 @@ metadata:
   name: macbook-sample
 spec:
   # Add fields here
-  foo: bar
+  display: bar
