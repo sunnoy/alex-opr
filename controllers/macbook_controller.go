@@ -18,7 +18,7 @@ package controllers
 
 import (
 	"context"
-
+	"fmt"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -50,8 +50,20 @@ type MacBookReconciler struct {
 func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = r.Log.WithValues("macbook", req.NamespacedName)
 
-	// your logic here
+	// 1 获取集群中的资源对象
+	// 实例出一个空的对象
+	ins := &mockv1beta1.MacBook{}
+	// 调用get方法从api中获取创建的对象
+	err := r.Get(context.TODO(), req.NamespacedName, ins)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	fmt.Print(ins.Spec.DisPlay, "/n")
 
+	if ins.Status.Mod == "" {
+		ins.Status.Mod = "hhhh"
+	}
+	fmt.Print(ins.Status.Mod, "/n")
 	return ctrl.Result{}, nil
 }
 

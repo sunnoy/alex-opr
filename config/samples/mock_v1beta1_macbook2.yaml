@@ -1,0 +1,7 @@
+apiVersion: mock.dong.com/v1beta1
+kind: MacBook
+metadata:
+  name: macbook-sample2
+spec:
+  # Add fields here
+  display: bar2
