@@ -17,14 +17,14 @@ limitations under the License.
 package controllers
 
 import (
+	mockv1beta1 "alex-opr/api/v1beta1"
 	"context"
 	"fmt"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	mockv1beta1 "alex-opr/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // MacBookReconciler reconciles a MacBook object
@@ -53,17 +53,31 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// 1 获取集群中的资源对象
 	// 实例出一个空的对象
 	ins := &mockv1beta1.MacBook{}
-	// 调用get方法从api中获取创建的对象
+	// client/Reader 接口 调用get方法从api中获取创建的对象
 	err := r.Get(context.TODO(), req.NamespacedName, ins)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 	fmt.Print(ins.Spec.DisPlay, "/n")
 
-	if ins.Status.Mod == "" {
-		ins.Status.Mod = "hhhh"
+	// new一个pod对象
+	pod := newCreatePod(ins)
+
+	// 建立关联关系
+	err = controllerutil.SetOwnerReference(ins, pod, r.Scheme)
+
+	if err != nil {
+		fmt.Print("set not ok")
 	}
-	fmt.Print(ins.Status.Mod, "/n")
+
+	// 2 调用 client/Writer 接口来往k8s里面创建资源
+	err = r.Create(context.TODO(), pod)
+	if err != nil {
+		fmt.Printf("pod %v create fail", pod.Name)
+	} else {
+		fmt.Printf("pod %v create ok", pod.Name)
+	}
+
 	return ctrl.Result{}, nil
 }
 
