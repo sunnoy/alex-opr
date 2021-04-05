@@ -18,20 +18,27 @@ package controllers
 
 import (
 	mockv1beta1 "alex-opr/api/v1beta1"
+	"alex-opr/controllers/create_res"
 	"context"
 	"fmt"
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+// MacBookReconciler 是个框架可以按需添加相关功能
 // MacBookReconciler reconciles a MacBook object
 type MacBookReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
+	// 添加事件记录器
+	Recorder record.EventRecorder
 }
 
 //+kubebuilder:rbac:groups=mock.dong.com,resources=macbooks,verbs=get;list;watch;create;update;patch;delete
@@ -57,25 +64,39 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	err := r.Get(context.TODO(), req.NamespacedName, ins)
 	if err != nil {
 		return ctrl.Result{}, err
+	} else {
+		fmt.Printf("MacBook res get [%v] \n", ins.Spec.DisPlay)
+		r.Recorder.Event(ins, "Normal", "GetRes", "okok")
 	}
-	fmt.Print(ins.Spec.DisPlay, "/n")
 
-	// new一个pod对象
-	pod := newCreatePod(ins)
+	// new一个pod对象,是个指针类型 *pod
+	pod := create_res.NewCreatePod(ins)
 
 	// 建立关联关系
 	err = controllerutil.SetOwnerReference(ins, pod, r.Scheme)
 
 	if err != nil {
-		fmt.Print("set not ok")
+		fmt.Print("set not ok\n")
 	}
 
-	// 2 调用 client/Writer 接口来往k8s里面创建资源
-	err = r.Create(context.TODO(), pod)
+	// 将查找的对象填入下面的指针类型变量中
+	found := &corev1.Pod{}
+	// 在集群中查找pod对象
+	// type ObjectKey types.NamespacedName
+	// Object 需要是一个指针类型
+	// 找到了就为空
+	err = r.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+
 	if err != nil {
-		fmt.Printf("pod %v create fail", pod.Name)
+		// 2 调用 client/Writer 接口来往k8s里面创建资源
+		err = r.Create(context.TODO(), pod)
+		if err != nil {
+			fmt.Printf("pod %v create fail,err is %v \n", pod.Name, err)
+		} else {
+			fmt.Printf("pod %v create ok \n", pod.Name)
+		}
 	} else {
-		fmt.Printf("pod %v create ok", pod.Name)
+		fmt.Printf("pod [%v] has create\n", pod.Name)
 	}
 
 	return ctrl.Result{}, nil

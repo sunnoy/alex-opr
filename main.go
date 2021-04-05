@@ -65,6 +65,7 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
+	// 1、初始化manager
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
@@ -78,10 +79,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	// 用manager启动controller
 	if err = (&controllers.MacBookReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("MacBook"),
 		Scheme: mgr.GetScheme(),
+		// 实例化事件记录
+		Recorder: mgr.GetEventRecorderFor("macbook"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MacBook")
 		os.Exit(1)

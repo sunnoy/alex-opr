@@ -3,7 +3,7 @@
  *@author          lirui
  *@create          2021-04-04 12:21
  */
-package controllers
+package create_res
 
 import (
 	mockv1beta1 "alex-opr/api/v1beta1"
@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-func newCreatePod(ins *mockv1beta1.MacBook) *corev1.Pod {
+func NewCreatePod(ins *mockv1beta1.MacBook) *corev1.Pod {
 	labels := map[string]string{
 		"app": ins.Name,
 	}
