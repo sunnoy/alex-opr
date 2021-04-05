@@ -3,7 +3,7 @@
  *@author          lirui
  *@create          2021-04-04 12:21
  */
-package create_res
+package tools
 
 import (
 	mockv1beta1 "alex-opr/api/v1beta1"

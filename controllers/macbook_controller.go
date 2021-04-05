@@ -18,7 +18,7 @@ package controllers
 
 import (
 	mockv1beta1 "alex-opr/api/v1beta1"
-	"alex-opr/controllers/create_res"
+	"alex-opr/controllers/tools"
 	"context"
 	"fmt"
 	"github.com/go-logr/logr"
@@ -29,6 +29,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"time"
 )
 
 // MacBookReconciler 是个框架可以按需添加相关功能
@@ -69,8 +70,44 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		r.Recorder.Event(ins, "Normal", "GetRes", "okok")
 	}
 
+	// finalizers 处理
+	// name of our custom finalizer
+	myFinalizerName := "dong.com/finalizer"
+
+	// examine DeletionTimestamp to determine if object is under deletion
+	if ins.ObjectMeta.DeletionTimestamp.IsZero() {
+		// The object is not being deleted, so if it does not have our finalizer,
+		// then lets add the finalizer and update the object. This is equivalent
+		// registering our finalizer.
+		if !containsString(ins.GetFinalizers(), myFinalizerName) {
+			ins.SetFinalizers(append(ins.GetFinalizers(), myFinalizerName))
+			if err := r.Update(ctx, ins); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+	} else {
+		// The object is being deleted
+		if containsString(ins.GetFinalizers(), myFinalizerName) {
+			// our finalizer is present, so lets handle any external dependency
+			if err := r.deleteExternalResources(ins); err != nil {
+				// if fail to delete the external dependency here, return with error
+				// so that it can be retried
+				return ctrl.Result{}, err
+			}
+
+			// remove our finalizer from the list and update it.
+			ins.SetFinalizers(removeString(ins.GetFinalizers(), myFinalizerName))
+			if err := r.Update(ctx, ins); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+
+		// Stop reconciliation as the item is being deleted
+		return ctrl.Result{}, nil
+	}
+
 	// new一个pod对象,是个指针类型 *pod
-	pod := create_res.NewCreatePod(ins)
+	pod := tools.NewCreatePod(ins)
 
 	// 建立关联关系
 	err = controllerutil.SetOwnerReference(ins, pod, r.Scheme)
@@ -100,6 +137,35 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func containsString(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
+}
+
+func removeString(slice []string, s string) (result []string) {
+	for _, item := range slice {
+		if item == s {
+			continue
+		}
+		result = append(result, item)
+	}
+	return
+}
+
+func (r *MacBookReconciler) deleteExternalResources(macbook *mockv1beta1.MacBook) error {
+	//
+	// delete any external resources associated with the ins
+	//
+	// Ensure that delete implementation is idempotent and safe to invoke
+	// multiple times for same object.
+	time.Sleep(30 * time.Second)
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
