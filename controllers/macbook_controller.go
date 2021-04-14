@@ -22,7 +22,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -58,6 +58,9 @@ type MacBookReconciler struct {
 func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = r.Log.WithValues("macbook", req.NamespacedName)
 
+	/*
+		获取调协的crd实例
+	*/
 	// 1 获取集群中的资源对象
 	// 实例出一个空的对象
 	ins := &mockv1beta1.MacBook{}
@@ -70,7 +73,10 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		r.Recorder.Event(ins, "Normal", "GetRes", "okok")
 	}
 
-	// finalizers 处理
+	/*
+		finalizers 处理
+	*/
+	//
 	// name of our custom finalizer
 	myFinalizerName := "dong.com/finalizer"
 
@@ -106,34 +112,40 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, nil
 	}
 
-	// new一个pod对象,是个指针类型 *pod
-	pod := tools.NewCreatePod(ins)
+	/*
+		创建dep并建立关系
+	*/
+	// new一个dep对象,是个指针类型 *dep
+	//dep := tools.NewCreatedep(ins)
 
-	// 建立关联关系
-	err = controllerutil.SetOwnerReference(ins, pod, r.Scheme)
+	dep := tools.NewDeployMent(ins)
 
+	/*
+		建立关系
+	*/
+	err = controllerutil.SetOwnerReference(ins, dep, r.Scheme)
 	if err != nil {
 		fmt.Print("set not ok\n")
 	}
 
 	// 将查找的对象填入下面的指针类型变量中
-	found := &corev1.Pod{}
-	// 在集群中查找pod对象
+	found := &appsv1.Deployment{}
+	// 在集群中查找dep对象
 	// type ObjectKey types.NamespacedName
 	// Object 需要是一个指针类型
 	// 找到了就为空
-	err = r.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+	err = r.Get(context.TODO(), types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
 
 	if err != nil {
 		// 2 调用 client/Writer 接口来往k8s里面创建资源
-		err = r.Create(context.TODO(), pod)
+		err = r.Create(context.TODO(), dep)
 		if err != nil {
-			fmt.Printf("pod %v create fail,err is %v \n", pod.Name, err)
+			fmt.Printf("dep %v create fail,err is %v \n", dep.Name, err)
 		} else {
-			fmt.Printf("pod %v create ok \n", pod.Name)
+			fmt.Printf("dep %v create ok \n", dep.Name)
 		}
 	} else {
-		fmt.Printf("pod [%v] has create\n", pod.Name)
+		fmt.Printf("dep [%v] has create\n", dep.Name)
 	}
 
 	return ctrl.Result{}, nil
@@ -164,7 +176,7 @@ func (r *MacBookReconciler) deleteExternalResources(macbook *mockv1beta1.MacBook
 	//
 	// Ensure that delete implementation is idempotent and safe to invoke
 	// multiple times for same object.
-	time.Sleep(30 * time.Second)
+	time.Sleep(1 * time.Second)
 	return nil
 }
 
