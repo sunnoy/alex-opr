@@ -19,7 +19,7 @@ func NewDeployMent(ins *mockv1beta1.MacBook) *appsv1.Deployment {
 			Name: ins.Name + "-deployment",
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: int32Ptr(2),
+			Replicas: int32Ptr(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app": ins.Name,
@@ -32,6 +32,7 @@ func NewDeployMent(ins *mockv1beta1.MacBook) *appsv1.Deployment {
 					},
 				},
 				Spec: apiv1.PodSpec{
+					TerminationGracePeriodSeconds: int64Ptr(0),
 					Containers: []apiv1.Container{
 						{
 							Name:  "web",
@@ -52,3 +53,4 @@ func NewDeployMent(ins *mockv1beta1.MacBook) *appsv1.Deployment {
 }
 
 func int32Ptr(i int32) *int32 { return &i }
+func int64Ptr(i int64) *int64 { return &i }
