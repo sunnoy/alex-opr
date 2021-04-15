@@ -18,6 +18,9 @@ func NewDeployMent(ins *mockv1beta1.MacBook) *appsv1.Deployment {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ins.Name + "-deployment",
 			Namespace: ins.Namespace,
+			Labels: map[string]string{
+				"app": ins.Name,
+			},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: int32Ptr(1),

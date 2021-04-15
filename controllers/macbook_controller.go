@@ -138,6 +138,7 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	if err != nil {
 		// 2 调用 client/Writer 接口来往k8s里面创建资源
+		fmt.Printf("这里有更新 %s", found.Labels)
 		err = r.Create(context.TODO(), dep)
 		if err != nil {
 			fmt.Printf("dep %v create fail,err is %v \n", dep.Name, err)
@@ -184,6 +185,10 @@ func (r *MacBookReconciler) deleteExternalResources(macbook *mockv1beta1.MacBook
 // SetupWithManager sets up the controller with the Manager.
 func (r *MacBookReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		// for指定需要监听的资源 基于watch实现
+		// Watches(&source.Kind{Type: apiType}, &handler.EnqueueRequestForObject{})
 		For(&mockv1beta1.MacBook{}).
+		// 指定监听crd的子资源
+		Owns(&appsv1.Deployment{}).
 		Complete(r)
 }
