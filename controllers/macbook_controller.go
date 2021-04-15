@@ -149,6 +149,7 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	return ctrl.Result{}, nil
+
 }
 
 func containsString(slice []string, s string) bool {
