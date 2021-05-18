@@ -59,6 +59,10 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	_ = r.Log.WithValues("macbook", req.NamespacedName)
 
 	/*
+		再添加了 own 方法后，这里的请求调协的对象可以是多种，需要做类型判断
+	*/
+
+	/*
 		获取调协的crd实例
 	*/
 	// 1 获取集群中的资源对象
