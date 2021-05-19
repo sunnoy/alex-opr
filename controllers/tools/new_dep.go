@@ -16,7 +16,7 @@ func NewDeployMent(ins *mockv1beta1.MacBook) *appsv1.Deployment {
 
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ins.Name + "-deployment",
+			Name:      ins.Name,
 			Namespace: ins.Namespace,
 			Labels: map[string]string{
 				"app": ins.Name,

@@ -20,12 +20,12 @@ import (
 	mockv1beta1 "alex-opr/api/v1beta1"
 	"alex-opr/controllers/tools"
 	"context"
-	"fmt"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"log"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -45,6 +45,8 @@ type MacBookReconciler struct {
 //+kubebuilder:rbac:groups=mock.dong.com,resources=macbooks,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=mock.dong.com,resources=macbooks/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=mock.dong.com,resources=macbooks/finalizers,verbs=update
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=apps,resources=deployments/status,verbs=get;update;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -59,10 +61,6 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	_ = r.Log.WithValues("macbook", req.NamespacedName)
 
 	/*
-		再添加了 own 方法后，这里的请求调协的对象可以是多种，需要做类型判断
-	*/
-
-	/*
 		获取调协的crd实例
 	*/
 	// 1 获取集群中的资源对象
@@ -73,8 +71,7 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err != nil {
 		return ctrl.Result{}, err
 	} else {
-		fmt.Printf("MacBook res get [%v] \n", ins.Spec.DisPlay)
-		r.Recorder.Event(ins, "Normal", "GetRes", "okok")
+		r.Recorder.Event(ins, "Normal", "GetRes", "获取自定义资源成功")
 	}
 
 	/*
@@ -129,7 +126,7 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	*/
 	err = controllerutil.SetOwnerReference(ins, dep, r.Scheme)
 	if err != nil {
-		fmt.Print("set not ok\n")
+		log.Println("set fiald")
 	}
 
 	// 将查找的对象填入下面的指针类型变量中
@@ -142,19 +139,47 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	if err != nil {
 		// 2 调用 client/Writer 接口来往k8s里面创建资源
-		fmt.Printf("这里有更新 %s", found.Labels)
 		err = r.Create(context.TODO(), dep)
 		if err != nil {
-			fmt.Printf("dep %v create fail,err is %v \n", dep.Name, err)
+			log.Println("dep created not ok")
 		} else {
-			fmt.Printf("dep %v create ok \n", dep.Name)
+			log.Println("dep 创建成功")
 		}
-	} else {
-		fmt.Printf("dep [%v] has create\n", dep.Name)
+	}
+
+	/*
+			再添加了 own 方法后
+
+
+		depp := &appsv1.Deployment{}
+		err = r.Get(context.TODO(), req.NamespacedName, depp)
+		if err != nil {
+			fmt.Println("depp 么有发现")
+
+			//return ctrl.Result{}, err
+		}
+
+		fmt.Println("depp 发现了")
+
+		ins.Labels["pod-count"] = fmt.Sprintf("%v", 8)
+		err = r.Update(ctx, ins)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	*/
+
+	err = r.Update(ctx, ins)
+	if err != nil {
+		log.Println("更新失败")
 	}
 
 	return ctrl.Result{}, nil
 
+}
+
+func (r *MacBookReconciler) InjectClient(c client.Client) error {
+	r.Client = c
+	return nil
 }
 
 func containsString(slice []string, s string) bool {
