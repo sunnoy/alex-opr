@@ -142,6 +142,13 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		} else {
 			//r.Recorder.Event(dep, "Normal", "GetRes", "deployment create ok !")
 			clog.Info("deployment create ok", "deployment-name", dep.Name)
+			MacBook.Status.Mod = dep.Name
+			// 关键代码 更新status
+			if err := r.Status().Update(ctx, MacBook); err != nil {
+				clog.Error(err, "MacBook.Status.Mod update fail !")
+			} else {
+				clog.Info("MacBook.Status.Mod update okokok !")
+			}
 		}
 	}
 

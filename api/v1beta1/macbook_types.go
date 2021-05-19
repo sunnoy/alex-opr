@@ -43,6 +43,8 @@ type MacBookStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+// 关键代码打印多行
+// +kubebuilder:printcolumn:name="Mod",type="string",JSONPath=".status.mod"
 
 // MacBook is the Schema for the macbooks API
 type MacBook struct {
