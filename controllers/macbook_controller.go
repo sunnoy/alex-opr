@@ -150,6 +150,8 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				clog.Info("MacBook.Status.Mod update okokok !")
 			}
 		}
+	} else {
+		clog.Info("找到了 deployment", "lable", dep.Spec.Template.Spec.Containers[0].Name)
 	}
 
 	return ctrl.Result{}, nil
