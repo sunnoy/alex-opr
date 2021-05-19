@@ -124,7 +124,7 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	/*
 		建立关系
 	*/
-	err = controllerutil.SetOwnerReference(ins, dep, r.Scheme)
+	err = controllerutil.SetControllerReference(ins, dep, r.Scheme)
 	if err != nil {
 		log.Println("set fiald")
 	}
