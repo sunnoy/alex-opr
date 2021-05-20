@@ -70,7 +70,7 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err != nil {
 		return ctrl.Result{}, err
 	} else {
-		clog.Info("find MacBook !", "MacBook-name", MacBook.Name)
+		clog.Info("find MacBook !", "MacBook-Annotations", MacBook.Annotations)
 	}
 
 	/*
@@ -127,11 +127,13 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	// 将查找的对象填入下面的指针类型变量中
+	// dep为期望状态不是指针，found为实际集群的状态可以实时反应出来
 	found := &appsv1.Deployment{}
 	// 在集群中查找dep对象
 	// type ObjectKey types.NamespacedName
 	// Object 需要是一个指针类型
 	// 找到了就为空
+	// 每次更新deployment出现更新就会触发这个操作
 	err = r.Get(context.TODO(), types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, found)
 
 	if err != nil {
@@ -151,7 +153,8 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			}
 		}
 	} else {
-		clog.Info("找到了 deployment", "lable", dep.Spec.Template.Spec.Containers[0].Name)
+		//clog.Info("找到了 deployment", "lable", dep.Spec.Template.Spec.Containers[0].Name)
+		clog.Info("找到了 deployment", "Annotations", found.Annotations)
 	}
 
 	return ctrl.Result{}, nil
