@@ -26,8 +26,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"time"
 )
 
@@ -41,11 +44,14 @@ type MacBookReconciler struct {
 	Recorder record.EventRecorder
 }
 
+// 注意权限管理，进行相关权限给予
+
 //+kubebuilder:rbac:groups=mock.dong.com,resources=macbooks,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=mock.dong.com,resources=macbooks/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=mock.dong.com,resources=macbooks/finalizers,verbs=update
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -72,6 +78,8 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	} else {
 		clog.Info("find MacBook !", "MacBook-Annotations", MacBook.Annotations)
 	}
+
+	r.Recorder.Event(MacBook, "Normal", "BeginReconcile", "开始调协了")
 
 	/*
 		finalizers 处理
@@ -195,8 +203,27 @@ func (r *MacBookReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		// for指定需要监听的资源 基于watch实现
 		// Watches(&source.Kind{Type: apiType}, &handler.EnqueueRequestForObject{})
-		For(&mockv1beta1.MacBook{}).
-		// 指定监听crd的子资源
+		// builder.WithPredicates(predicate.GenerationChangedPredicate{}) 忽略status字段更新的调协操作
+		For(&mockv1beta1.MacBook{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		// Owns 指定监听crd的子资源,第二个字段是过滤器，针对不同的事件采取特定的过滤策略
 		Owns(&appsv1.Deployment{}).
+		Owns(&appsv1.Deployment{}, builder.WithPredicates(onlyReconcilerDeploymentLable())).
 		Complete(r)
+}
+
+// predicate 使用 https://sdk.operatorframework.io/docs/building-operators/golang/references/event-filtering/
+func onlyReconcilerDeploymentLable() predicate.Predicate {
+	return predicate.Funcs{
+		// 这些函数中返回值为 true 就会执行响应的事件handler
+		// 下面的逻辑表示 在更新事件中，只有ns为 lrq 的资源对象才会触发更新事件handler
+		UpdateFunc: func(event event.UpdateEvent) bool {
+			return event.ObjectNew.GetNamespace() == "lr"
+		},
+		CreateFunc: func(createEvent event.CreateEvent) bool {
+			return createEvent.Object.GetNamespace() == "lr"
+		},
+		DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
+			return deleteEvent.Object.GetNamespace() == "lr"
+		},
+	}
 }
