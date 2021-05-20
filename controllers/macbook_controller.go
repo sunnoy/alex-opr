@@ -83,6 +83,7 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	/*
 		finalizers 处理
+		示例代码 https://github.com/kubernetes-sigs/kubebuilder/blob/0317c63acfc2fb55a61492817968f09c4f7e20fa/docs/book/src/cronjob-tutorial/testdata/finalizer_example.go#L54
 	*/
 	//
 	// name of our custom finalizer
@@ -165,6 +166,13 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		clog.Info("找到了 deployment", "Annotations", found.Annotations)
 	}
 
+	depList := &appsv1.DeploymentList{}
+	if err := r.List(ctx, depList, client.InNamespace(req.Namespace), client.MatchingFields{nsKey: req.Namespace}); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	clog.Info("获取到了某个ns的deployment列表", "delListLen", len(depList.Items))
+
 	return ctrl.Result{}, nil
 
 }
@@ -198,19 +206,6 @@ func (r *MacBookReconciler) deleteExternalResources(macbook *mockv1beta1.MacBook
 	return nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *MacBookReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		// for指定需要监听的资源 基于watch实现
-		// Watches(&source.Kind{Type: apiType}, &handler.EnqueueRequestForObject{})
-		// builder.WithPredicates(predicate.GenerationChangedPredicate{}) 忽略status字段更新的调协操作
-		For(&mockv1beta1.MacBook{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		// Owns 指定监听crd的子资源,第二个字段是过滤器，针对不同的事件采取特定的过滤策略
-		Owns(&appsv1.Deployment{}).
-		Owns(&appsv1.Deployment{}, builder.WithPredicates(onlyReconcilerDeploymentLable())).
-		Complete(r)
-}
-
 // predicate 使用 https://sdk.operatorframework.io/docs/building-operators/golang/references/event-filtering/
 func onlyReconcilerDeploymentLable() predicate.Predicate {
 	return predicate.Funcs{
@@ -226,4 +221,32 @@ func onlyReconcilerDeploymentLable() predicate.Predicate {
 			return deleteEvent.Object.GetNamespace() == "lr"
 		},
 	}
+}
+
+var nsKey = ".metadata.namespace"
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *MacBookReconciler) SetupWithManager(mgr ctrl.Manager) error {
+
+	// 加快搜索，增加索引
+	// https://github.com/kubernetes-sigs/kubebuilder/issues/1422
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &appsv1.Deployment{}, nsKey, func(rawObj client.Object) []string {
+
+		deployment := rawObj.(*appsv1.Deployment)
+		ns := deployment.GetNamespace()
+
+		return []string{ns}
+	}); err != nil {
+		return err
+	}
+
+	return ctrl.NewControllerManagedBy(mgr).
+		// for指定需要监听的资源 基于watch实现
+		// Watches(&source.Kind{Type: apiType}, &handler.EnqueueRequestForObject{})
+		// builder.WithPredicates(predicate.GenerationChangedPredicate{}) 忽略status字段更新的调协操作
+		For(&mockv1beta1.MacBook{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		// Owns 指定监听crd的子资源,第二个字段是过滤器，针对不同的事件采取特定的过滤策略
+		Owns(&appsv1.Deployment{}).
+		Owns(&appsv1.Deployment{}, builder.WithPredicates(onlyReconcilerDeploymentLable())).
+		Complete(r)
 }
