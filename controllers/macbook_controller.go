@@ -223,13 +223,24 @@ func onlyReconcilerDeploymentLable() predicate.Predicate {
 	}
 }
 
-var nsKey = ".metadata.namespace"
+var nsKey = "byNs"
+
+//var nsKey = ".metadata.namespace"
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *MacBookReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
-	// 加快搜索，增加索引
-	// https://github.com/kubernetes-sigs/kubebuilder/issues/1422
+	/*
+		加快搜索，增加索引
+		https://github.com/kubernetes-sigs/kubebuilder/issues/1422
+		这个函数相当于自己为某个资源对象创建了一个数据的维度，这个维度字段可以使用客户端的 client.MatchingFields 方法来选择使用
+		这里形成的是个"倒排索引"
+		资源对象就是一个个的文档，根据某个文档中的字段进行索引给这个索引起个名字就是 nskey ，
+		倒排索引中key 就是 对象中的某一个key的value 比如，value 就是 该文档
+		byNs
+		lr  deployment1，deployment2,deployment3
+		defalut deployment5
+	*/
 	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &appsv1.Deployment{}, nsKey, func(rawObj client.Object) []string {
 
 		deployment := rawObj.(*appsv1.Deployment)
