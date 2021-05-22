@@ -257,7 +257,7 @@ func (r *MacBookReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		// builder.WithPredicates(predicate.GenerationChangedPredicate{}) 忽略status字段更新的调协操作
 		For(&mockv1beta1.MacBook{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		// Owns 指定监听crd的子资源,第二个字段是过滤器，针对不同的事件采取特定的过滤策略
-		Owns(&appsv1.Deployment{}).
+		//Owns(&appsv1.Deployment{}).
 		Owns(&appsv1.Deployment{}, builder.WithPredicates(onlyReconcilerDeploymentLable())).
 		Complete(r)
 }
