@@ -127,6 +127,8 @@ func (r *MacBookReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	dep := tools.NewDeployMent(MacBook)
 
+	addedNamespaces.Add(float64(999))
+
 	/*
 		建立关系
 	*/
